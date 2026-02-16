@@ -1,5 +1,44 @@
 ![Python Version](https://img.shields.io/badge/python-3.13.2-blue?style=for-the-badge&logo=python&logoColor=white)
 
+# Product Catalog App (Python + Tkinter + SQLite)
+
+A desktop application built with **Python and Tkinter** to manage a **product price catalog** stored in an **SQLite database**.
+
+## 🔹 Extended Description
+
+This app allows users to **add, update, delete, and search products** using a simple graphical interface. It includes **spell checking** for product names and persistent storage using SQLite.  
+
+**Features:**
+- Add, update, delete, and clear products
+- Search products by **code** or **name**
+- **Spell check** for product names
+- Double-click table rows to auto-fill the form for editing
+- Create a new catalog by clearing all products
+- Persistent storage with **SQLite**
+
+**Technologies used:** Python, Tkinter, SQLite, SpellChecker  
+
+**Use cases:** Suitable for **small shops**, personal inventory management, or **learning GUI development** with Python.
+
+**Future improvements:**
+- Export catalog to CSV or PDF
+- Multi-language support
+- Advanced sorting and filtering
+
+## 🔹 Installation
+
+```bash
+pip install tkinter spellchecker
+
+
+![Python Version](https://img.shields.io/badge/python-3.13.2-blue?style=for-the-badge&logo=python&logoColor=white)
+
+pip install tkinter spellchecker
+python catalog_app.py
+
+<img width="1242" height="861" alt="Στιγμιότυπο οθόνης 2026-02-16 050901" src="https://github.com/user-attachments/assets/490fab19-60d5-4ead-b76b-ed0c44032bf2" />
+
+---------------------------------------------------------------------------------------------------------------------------
 # Alarm System (Python)
 
 A simple Python program that prints fire risk levels based on a user-entered number (1–20).  
