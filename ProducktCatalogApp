@@ -1,0 +1,282 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import sqlite3
+from spellchecker import SpellChecker
+
+class PriceCatalogApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Product Price Catalog (SQLite)")
+        self.root.geometry("1000x650")
+
+        # Connect to SQLite database
+        self.conn = sqlite3.connect("catalog.db")
+        self.create_table()
+
+        # Create menu
+        self.create_menu()
+
+        # Left side: form and control buttons
+        self.left_frame = tk.Frame(root, width=300, padx=10, pady=10, bg="#f0f0f0")
+        self.left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=False)
+
+        # Data entry frame
+        input_frame = tk.LabelFrame(self.left_frame, text=" Data Entry ", bg="#f0f0f0", padx=5, pady=5)
+        input_frame.pack(fill=tk.X, pady=5)
+
+        tk.Label(input_frame, text="Code:", bg="#f0f0f0").grid(row=0, column=0, sticky="w", pady=2)
+        self.code_entry = tk.Entry(input_frame)
+        self.code_entry.grid(row=0, column=1, pady=2)
+
+        tk.Label(input_frame, text="Product:", bg="#f0f0f0").grid(row=1, column=0, sticky="w", pady=2)
+        self.name_entry = tk.Entry(input_frame)
+        self.name_entry.grid(row=1, column=1, pady=2)
+
+        tk.Label(input_frame, text="Price (€):", bg="#f0f0f0").grid(row=2, column=0, sticky="w", pady=2)
+        self.price_entry = tk.Entry(input_frame)
+        self.price_entry.grid(row=2, column=1, pady=2)
+
+        # Control buttons
+        button_frame = tk.Frame(self.left_frame, bg="#f0f0f0")
+        button_frame.pack(fill=tk.X, pady=10)
+
+        self.add_button = tk.Button(button_frame, text="Add", command=self.add_product, bg="#4CAF50", fg="white", width=12)
+        self.add_button.grid(row=0, column=0, padx=2, pady=2)
+
+        self.update_button = tk.Button(button_frame, text="Update", command=self.update_product, bg="#2196F3", fg="white", width=12)
+        self.update_button.grid(row=0, column=1, padx=2, pady=2)
+
+        self.delete_button = tk.Button(button_frame, text="Delete", command=self.delete_product, bg="#f44336", fg="white", width=12)
+        self.delete_button.grid(row=1, column=0, padx=2, pady=2)
+
+        self.clear_button = tk.Button(button_frame, text="Clear", command=self.clear_entries, bg="#FF9800", fg="white", width=12)
+        self.clear_button.grid(row=1, column=1, padx=2, pady=2)
+
+        # Spellcheck button
+        self.spellcheck_button = tk.Button(button_frame, text="Spell Check", command=self.check_spelling, bg="#9C27B0", fg="white", width=25)
+        self.spellcheck_button.grid(row=2, columnspan=2, pady=10)
+
+        # Search frame
+        search_frame = tk.LabelFrame(self.left_frame, text=" Product Search ", bg="#f0f0f0", padx=5, pady=5)
+        search_frame.pack(fill=tk.X, pady=5)
+
+        tk.Label(search_frame, text="Criterion:", bg="#f0f0f0").grid(row=0, column=0, sticky="w", pady=2)
+        self.search_entry = tk.Entry(search_frame)
+        self.search_entry.grid(row=0, column=1, pady=2)
+
+        search_buttons = tk.Frame(search_frame, bg="#f0f0f0")
+        search_buttons.grid(row=1, columnspan=2, pady=5)
+
+        self.search_code_button = tk.Button(search_buttons, text="Search by Code", command=lambda: self.search_product("code"), bg="#607D8B", fg="white", width=18)
+        self.search_code_button.pack(side=tk.LEFT, padx=2)
+
+        self.search_name_button = tk.Button(search_buttons, text="Search by Name", command=lambda: self.search_product("name"), bg="#607D8B", fg="white", width=18)
+        self.search_name_button.pack(side=tk.LEFT, padx=2)
+
+        # Right side: product table
+        self.right_frame = tk.Frame(root, padx=10, pady=10)
+        self.right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        self.tree = ttk.Treeview(self.right_frame, columns=("Code", "Name", "Price"), show="headings")
+        self.tree.heading("Code", text="Code")
+        self.tree.heading("Name", text="Product")
+        self.tree.heading("Price", text="Price (€)")
+        self.tree.pack(fill=tk.BOTH, expand=True)
+
+        self.tree.bind("<Double-1>", self.on_double_click)
+        self.load_products()
+
+    def create_menu(self):
+        menubar = tk.Menu(self.root)
+        
+        # File menu
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="New", command=self.new_catalog)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.quit)
+        menubar.add_cascade(label="File", menu=file_menu)
+
+        # Edit menu
+        edit_menu = tk.Menu(menubar, tearoff=0)
+        edit_menu.add_command(label="Add", command=self.add_product)
+        edit_menu.add_command(label="Update", command=self.update_product)
+        edit_menu.add_command(label="Delete", command=self.delete_product)
+        edit_menu.add_separator()
+        edit_menu.add_command(label="Clear", command=self.clear_entries)
+        menubar.add_cascade(label="Edit", menu=edit_menu)
+
+        # Help menu
+        help_menu = tk.Menu(menubar, tearoff=0)
+        help_menu.add_command(label="About", command=self.show_about)
+        menubar.add_cascade(label="Help", menu=help_menu)
+
+        self.root.config(menu=menubar)
+
+    def create_table(self):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS products (
+                code TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                price REAL NOT NULL
+            )
+        """)
+        self.conn.commit()
+
+    def add_product(self):
+        # Spellcheck before inserting
+        self.check_spelling()
+        
+        code = self.code_entry.get().strip()
+        name = self.name_entry.get().strip()
+        price = self.price_entry.get().strip()
+
+        # Validate price
+        try:
+            price_float = float(price)
+            if price_float <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "Price must be a positive number!")
+            return
+
+        if code and name and price:
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute("INSERT INTO products VALUES (?, ?, ?)", (code, name, price_float))
+                self.conn.commit()
+                self.load_products()
+                self.clear_entries()
+            except sqlite3.IntegrityError:
+                messagebox.showerror("Error", "Code already exists!")
+        else:
+            messagebox.showerror("Error", "Fill in all fields!")
+
+    def update_product(self):
+        selected_item = self.tree.selection()
+        if selected_item:
+            old_code = self.tree.item(selected_item)['values'][0]
+            new_code = self.code_entry.get().strip() or old_code
+            new_name = self.name_entry.get().strip() or self.tree.item(selected_item)['values'][1]
+            new_price = self.price_entry.get().strip() or self.tree.item(selected_item)['values'][2]
+
+            try:
+                price_float = float(new_price)
+                if price_float <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Error", "Price must be a positive number!")
+                return
+
+            cursor = self.conn.cursor()
+            cursor.execute("UPDATE products SET code=?, name=?, price=? WHERE code=?", 
+                          (new_code, new_name, price_float, old_code))
+            self.conn.commit()
+            self.load_products()
+            self.clear_entries()
+        else:
+            messagebox.showerror("Error", "Select a product to update!")
+
+    def delete_product(self):
+        selected_item = self.tree.selection()
+        if selected_item:
+            code = self.tree.item(selected_item)['values'][0]
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM products WHERE code=?", (code,))
+            self.conn.commit()
+            self.load_products()
+        else:
+            messagebox.showerror("Error", "Select a product to delete!")
+
+    def search_product(self, search_by):
+        search_term = self.search_entry.get().strip()
+        if search_term:
+            cursor = self.conn.cursor()
+            if search_by == "code":
+                cursor.execute("SELECT * FROM products WHERE code LIKE ?", (f"%{search_term}%",))
+            else:
+                cursor.execute("SELECT * FROM products WHERE name LIKE ?", (f"%{search_term}%",))
+            
+            rows = cursor.fetchall()
+            self.display_search_results(rows)
+        else:
+            messagebox.showwarning("Warning", "Enter a search criterion!")
+
+    def display_search_results(self, rows):
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+        
+        for row in rows:
+            self.tree.insert("", tk.END, values=row)
+
+    def load_products(self):
+        self.display_search_results(self.fetch_all_products())
+
+    def fetch_all_products(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM products")
+        return cursor.fetchall()
+
+    def clear_entries(self):
+        self.code_entry.delete(0, tk.END)
+        self.name_entry.delete(0, tk.END)
+        self.price_entry.delete(0, tk.END)
+        self.search_entry.delete(0, tk.END)
+
+    def new_catalog(self):
+        if messagebox.askyesno("New Catalog", "Do you want to delete all products?"):
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM products")
+            self.conn.commit()
+            self.load_products()
+
+    def show_about(self):
+        messagebox.showinfo("About", "Product Price Catalog\nVersion 2.0\nCreated with Python and Tkinter")
+
+    def on_double_click(self, event):
+        selected_item = self.tree.selection()
+        if selected_item:
+            values = self.tree.item(selected_item)['values']
+            self.code_entry.delete(0, tk.END)
+            self.code_entry.insert(0, values[0])
+            self.name_entry.delete(0, tk.END)
+            self.name_entry.insert(0, values[1])
+            self.price_entry.delete(0, tk.END)
+            self.price_entry.insert(0, values[2])
+
+    def check_spelling(self):
+        """Check and correct spelling in all fields."""
+        spell = SpellChecker()
+
+        # Add custom words (optional)
+        custom_words = ["Apple", "Banana", "Tomato", "Cucumber"]  # Add your own words
+        for word in custom_words:
+            spell.word_frequency.add(word.lower())
+
+        # Check fields
+        fields = [
+            (self.code_entry, False),  # (widget, check_spelling)
+            (self.name_entry, True),
+            (self.price_entry, False)
+        ]
+
+        for widget, should_check in fields:
+            text = widget.get()
+            if should_check and text:
+                words = text.split()
+                corrected_words = []
+                for word in words:
+                    corrected_word = spell.correction(word) or word
+                    corrected_words.append(corrected_word)
+                corrected_text = " ".join(corrected_words)
+                widget.delete(0, tk.END)
+                widget.insert(0, corrected_text)
+
+    def __del__(self):
+        self.conn.close()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PriceCatalogApp(root)
+    root.mainloop()
+
