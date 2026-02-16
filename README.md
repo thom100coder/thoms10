@@ -1,3 +1,12 @@
+![Python Version](https://img.shields.io/badge/python-3.13.2-blue?style=for-the-badge&logo=python&logoColor=white)
+
+# Alarm System (Python)
+
+A simple Python program that prints fire risk levels based on a user-entered number (1–20).  
+This project demonstrates basic Python skills, input handling, and conditional logic.
+
+...
+
 # Alarm System (Python)
 
 A simple Python program that prints fire risk levels based on a user-entered number (1-20).  
