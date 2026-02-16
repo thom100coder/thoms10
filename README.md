@@ -28,4 +28,9 @@ python alarm_system.py
 ---------------------------------------------------------------------------------------------------------------
 Enter the alarm level (1-20): 18
 High fire risk
+<img width="828" height="401" alt="Στιγμιότυπο οθόνης 2026-02-16 040119" src="https://github.com/user-attachments/assets/1b8b74c0-1eef-4034-a415-0dea0aa9b36d" />
+<img width="862" height="335" alt="Στιγμιότυπο οθόνης 2026-02-16 040032" src="https://github.com/user-attachments/assets/d484fb83-e060-495d-9df3-19fde254b6b1" />
+
+
+
 
